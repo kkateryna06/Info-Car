@@ -2,7 +2,8 @@ from telegram.ext import Application, CommandHandler
 import asyncio
 
 from fetch_exam_date import fetch_data
-from date import is_less_than_25days
+from date import is_less_than_x_days
+
 
 # Sends a message to Telegram
 async def send_telegram_message(message, bot, CHAT_ID):
@@ -11,8 +12,17 @@ async def send_telegram_message(message, bot, CHAT_ID):
 # Fetches the exam date and sends a message if conditions are met
 async def get_exam_date(bot, CHAT_ID, LOGIN, PASSWORD):
     term_text = fetch_data(LOGIN, PASSWORD)
-    if is_less_than_25days(term_text[-5:]):
-        await send_telegram_message(f"DATA EGZAMINU: {term_text}", bot, CHAT_ID)
+
+    # Practical exam
+    if is_less_than_x_days(term_text[0][-5:], 25):
+        await send_telegram_message(f"DATA EGZAMINU PRAKTYCZNEGO: {term_text[0]}", bot, CHAT_ID)
+        print("Message sent")
+    else:
+        print("Message not sent, the exam date is too far away")
+
+    # Theoretical exam
+    if is_less_than_x_days(term_text[1][-5:], 7):
+        await send_telegram_message(f"DATA EGZAMINU TEORYTYCZNEGO: {term_text[1]}", bot, CHAT_ID)
         print("Message sent")
     else:
         print("Message not sent, the exam date is too far away")
@@ -21,7 +31,7 @@ async def get_exam_date(bot, CHAT_ID, LOGIN, PASSWORD):
 async def periodic_task(bot, CHAT_ID, LOGIN, PASSWORD):
     while True:
         await get_exam_date(bot, CHAT_ID, LOGIN, PASSWORD)
-        await asyncio.sleep(900)  # Runs every 15 minutes
+        await asyncio.sleep(600)  # Runs every 15 minutes
 
 # Bot start command
 async def start(update, context):

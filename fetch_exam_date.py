@@ -84,9 +84,30 @@ def fetch_data(LOGIN, PASSWORD):
 
         # Retrieve exam date
         term_element = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "div.accordion-header h5.m-0")))
-        term_text = term_element.text
-        print(f"Exam date: {term_text}")
-        return term_text
+        term_practice_text = term_element.text
+        print(f"Practice exam date: {term_practice_text}")
+
+        # Select "THEORETICAL" radio button
+        radio_button = wait.until(
+            EC.presence_of_element_located(
+                (By.XPATH, '//input[@type="radio"][@aria-label="THEORY"]')
+            )
+        )
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", radio_button)
+        try:
+            radio_button.click()
+        except:
+            driver.execute_script("arguments[0].click();", radio_button)
+
+        # Retrieve exam date
+        term_element = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "div.accordion-header h5.m-0")))
+        term_theoretical_exam = term_element.text
+        print(f"Practice exam date: {term_theoretical_exam}")
+
+
+
+        return [term_practice_text, term_theoretical_exam]
+
 
     except Exception as e:
         print(f"Error: {e}")
