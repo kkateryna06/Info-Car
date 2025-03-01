@@ -5,7 +5,33 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-def fetch_data(LOGIN, PASSWORD):
+def get_exam_date(driver, wait, radio_label):
+    # Locate and click the radio button
+    radio_button = wait.until(
+        EC.presence_of_element_located(
+            (By.XPATH, f'//input[@type="radio"][@aria-label="{radio_label}"]')
+        )
+    )
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", radio_button)
+    try:
+        radio_button.click()
+    except:
+        driver.execute_script("arguments[0].click();", radio_button)
+
+    # Retrieve the exam date
+    term_element = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "div.accordion-header h5.m-0")))
+    term_text = term_element.text
+
+    # Retrieve the exam time
+    exam_times_element = WebDriverWait(driver, 10).until(
+        EC.presence_of_all_elements_located((By.CSS_SELECTOR, "p.exam-time span")))
+    exam_times = [elem.text for elem in exam_times_element]
+    cleaned_exam_times = [item for item in exam_times if item != ""]
+
+    return term_text, cleaned_exam_times
+
+
+def fetch_data(LOGIN, PASSWORD, THEORETICAL_TERMS):
     chrome_driver_path = r"C:\Users\katya\chromedriver-win64\chromedriver.exe"
     service = Service(chrome_driver_path)
     driver = webdriver.Chrome(service=service)
@@ -70,26 +96,23 @@ def fetch_data(LOGIN, PASSWORD):
         driver.execute_script("arguments[0].click();", next_button)
         wait = WebDriverWait(driver, 20)
 
-        # Select "PRACTICE" radio button
-        radio_button = wait.until(
-            EC.presence_of_element_located(
-                (By.XPATH, '//input[@type="radio"][@aria-label="PRACTICE"]')
-            )
-        )
-        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", radio_button)
-        try:
-            radio_button.click()
-        except:
-            driver.execute_script("arguments[0].click();", radio_button)
 
-        # Retrieve exam date
-        term_element = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "div.accordion-header h5.m-0")))
-        term_text = term_element.text
-        print(f"Exam date: {term_text}")
-        return term_text
+        # Retrieve practice exam date
+        term_practice_exam = get_exam_date(driver, wait, "PRACTICE")
+        print(f"Practice exam date: {term_practice_exam}")
+
+        term_theoretical_exam = ()
+        if THEORETICAL_TERMS:
+            # Retrieve theoretical exam date
+            term_theoretical_exam = get_exam_date(driver, wait, "THEORY")
+            print(f"Theoretical exam date: {term_theoretical_exam}")
+
+
+        return [term_practice_exam, term_theoretical_exam]
+
 
     except Exception as e:
         print(f"Error: {e}")
 
     finally:
-        pass
+        driver.quit()

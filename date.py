@@ -1,7 +1,7 @@
 from datetime import datetime
 
 
-def is_less_than_25days(term_text):
+def is_less_than_x_days(term_text, x):
     # Get the current date
     today = datetime.today()
 
@@ -19,4 +19,4 @@ def is_less_than_25days(term_text):
         term_date = term_date.replace(year=today.year + 1)
 
     # Check the difference in days
-    return (term_date - today).days <= 25
+    return (term_date - today).days <= x

@@ -3,3 +3,5 @@ CHAT_ID = ''
 
 LOGIN = ''
 PASSWORD = ''
+
+THEORETICAL_TERMS = ''
