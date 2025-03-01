@@ -12,6 +12,8 @@
 
 **PASSWORD = 'your_password'**             - The password for your account on https://info-car.pl  
 
+**THEORETICAL_TERMS = '1'**                - If set to '1', theoretical terms will be sent
+
 ### 2. Install dependencies: Make sure you have all the necessary libraries installed. You can do this by running:  
 
 **pip install -r requirements.txt**
@@ -21,4 +23,6 @@
 **python main.py**
 
 ## Code Description
-The script runs every 15 minutes to fetch the nearest exam date from info-car.pl. If the exam is within the next 25 days, it sends a Telegram notification to the user with the exam date.
+The script runs at a frequency depending on the time of day to fetch the nearest exam dates from info-car.pl. 
+If the practical exam is within the next 25 days and the theoretical exam is within the next 7 days, 
+it sends a Telegram notification to the user with the exam dates.
