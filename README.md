@@ -1,3 +1,4 @@
+
 # Info-Car
 
 ## How to Run the Project
@@ -29,7 +30,7 @@
 #### Personal details for exam registration
 **FIRST_NAME = 'Name'**                    - Your first name
 
-**LAST_NAME = 'Holub'**                    - Your last name
+**LAST_NAME = 'Last Name'**                    - Your last name
 
 **PESEL = '12345'**                        - Your PESEL number
 
@@ -47,11 +48,11 @@
 
 ### 2. Install dependencies: Make sure you have all the necessary libraries installed. You can do this by running:  
 
-**pip install -r requirements.txt**
+    pip install -r requirements.txt
 
 ### 3. Run the project: To run the project, simply use the command:
 
-**python main.py**
+    python main.py
 
 ## Code Description
 The script runs at a frequency depending on the time of day to fetch the nearest exam dates from info-car.pl.
@@ -61,7 +62,7 @@ The process will stop at the payment step, keeping the browser window open and w
 
 Before running the script, you need to download the ChromeDriver compatible with your version of Google Chrome. https://developer.chrome.com/docs/chromedriver/downloads/version-selection
 
-<span style="color: red;">Warning:</span>
+## Warning
 
 1. Ensure that all user data is entered correctly; otherwise, the script will not be able to book an exam.
 2. Check the exact spelling of your province (województwo) and WORD (ośrodek egzaminacyjny) on the info-car.pl and enter them in the corresponding fields, preserving the letter case.
