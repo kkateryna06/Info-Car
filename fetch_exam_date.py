@@ -1,4 +1,8 @@
+import asyncio
+import time
+
 from selenium import webdriver
+from selenium.webdriver import ActionChains, Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -31,10 +35,11 @@ def get_exam_date(driver, wait, radio_label):
     return term_text, cleaned_exam_times
 
 
-def fetch_data(LOGIN, PASSWORD, THEORETICAL_TERMS):
-    chrome_driver_path = r"C:\Users\katya\chromedriver-win64\chromedriver.exe"
+def fetch_data(LOGIN, PASSWORD, THEORETICAL_TERMS, word_info, CHROME_DRIVER_PATH, user_info = None, is_booking = False):
+    chrome_driver_path = CHROME_DRIVER_PATH
     service = Service(chrome_driver_path)
     driver = webdriver.Chrome(service=service)
+    driver.set_window_size(400, 800)
 
     try:
         driver.get("https://info-car.pl/new/prawo-jazdy/sprawdz-wolny-termin")
@@ -70,25 +75,25 @@ def fetch_data(LOGIN, PASSWORD, THEORETICAL_TERMS):
         except:
             driver.execute_script("arguments[0].click();", radio_button)
 
-        # Select province (Dolnośląskie)
+        # Select province
         province_input = wait.until(EC.visibility_of_element_located((By.ID, "province")))
         driver.execute_script("arguments[0].click();", province_input)
         province_list = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "ul.results")))
-        dolnoslaskie_option = driver.find_element(By.ID, "dolnośląskie")
+        dolnoslaskie_option = driver.find_element(By.ID, word_info["province"])
         driver.execute_script("arguments[0].click();", dolnoslaskie_option)
 
-        # Select exam center (WORD Wrocław)
+        # Select exam center
         organization_input = wait.until(EC.visibility_of_element_located((By.ID, "organization")))
         driver.execute_script("arguments[0].click();", organization_input)
         result_list = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "ul.results")))
-        word_wroclaw_option = driver.find_element(By.ID, "word-wrocław")
+        word_wroclaw_option = driver.find_element(By.ID, word_info["word"])
         driver.execute_script("arguments[0].click();", word_wroclaw_option)
 
         # Select category (B)
         category_input = wait.until(EC.visibility_of_element_located((By.ID, "category-select")))
         driver.execute_script("arguments[0].click();", category_input)
         result_list = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "ul.results")))
-        b_option = driver.find_element(By.ID, "b")
+        b_option = driver.find_element(By.ID, word_info["category"])
         driver.execute_script("arguments[0].click();", b_option)
 
         # Click "Next"
@@ -108,7 +113,81 @@ def fetch_data(LOGIN, PASSWORD, THEORETICAL_TERMS):
             print(f"Theoretical exam date: {term_theoretical_exam}")
 
 
-        return [term_practice_exam, term_theoretical_exam]
+        if not is_booking:
+            return [term_practice_exam, term_theoretical_exam, driver, wait]
+
+        else:
+            try:
+                mobile_select = wait.until(
+                    EC.element_to_be_clickable((By.XPATH, '//div[@aria-label="Rozwijana lista"]'))
+                )
+                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", mobile_select)
+                time.sleep(1)
+
+                try:
+                    mobile_select.click()
+                except Exception as e:
+                    driver.execute_script("arguments[0].click();", mobile_select)
+
+            except Exception as e:
+                print(f"Error: {e}")
+
+            confirm_button = driver.find_element(By.ID, "confirm-modal-btn")
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", confirm_button)
+            time.sleep(1)
+            driver.execute_script("arguments[0].click();", confirm_button)
+
+            firstname_input = driver.find_element(By.ID, "firstname")
+            firstname_input.send_keys(user_info["first_name"])
+
+            firstname_input = driver.find_element(By.ID, "lastname")
+            firstname_input.send_keys(user_info["last_name"])
+
+            firstname_input = driver.find_element(By.ID, "pesel")
+            firstname_input.send_keys(user_info["pesel"])
+
+            firstname_input = driver.find_element(By.ID, "pkk")
+            firstname_input.send_keys(user_info["pkk"])
+
+            category_input = driver.find_element(By.ID, "category-select")
+            category_input.send_keys(user_info["category"])
+            category_input.send_keys(Keys.RETURN)
+
+            firstname_input = driver.find_element(By.ID, "email")
+            firstname_input.send_keys(user_info["email"])
+
+            firstname_input = driver.find_element(By.ID, "phoneNumber")
+            firstname_input.send_keys(user_info["phone_number"])
+
+            checkbox = driver.find_element(By.ID, "regulations-text")
+            driver.execute_script("arguments[0].click();", checkbox)
+
+            next_button = driver.find_element(By.XPATH, "//span[text()='Dalej']")
+            driver.execute_script("arguments[0].scrollIntoView(true);", next_button)
+            time.sleep(1)
+            next_button.click()
+
+            next_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "next-btn")))
+            next_button.click()
+
+            time.sleep(5)
+
+            button = driver.find_element(By.ID, "next-btn")
+            driver.execute_script("arguments[0].scrollIntoView();", button)
+            time.sleep(1)
+            next_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "next-btn")))
+            next_button.click()
+
+            time.sleep(5)
+
+            # confirm_button = WebDriverWait(driver, 10).until(
+            #     EC.element_to_be_clickable((By.XPATH, '//button[contains(@class, "ghost-btn") and text()="Potwierdzam"]'))
+            # )
+            # driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", confirm_button)
+            # time.sleep(1)
+            # confirm_button.click()
+
+            input("Press any key...")
 
 
     except Exception as e:
@@ -116,3 +195,5 @@ def fetch_data(LOGIN, PASSWORD, THEORETICAL_TERMS):
 
     finally:
         driver.quit()
+
+
