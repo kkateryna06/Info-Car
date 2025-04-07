@@ -1,12 +1,16 @@
 import asyncio
+import subprocess
 import time
 
+import requests
 from selenium import webdriver
 from selenium.webdriver import ActionChains, Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+from date import is_less_than_x_days
 
 
 def get_exam_date(driver, wait, radio_label):
@@ -35,7 +39,7 @@ def get_exam_date(driver, wait, radio_label):
     return term_text, cleaned_exam_times
 
 
-def fetch_data(LOGIN, PASSWORD, THEORETICAL_TERMS, word_info, CHROME_DRIVER_PATH, user_info = None, is_booking = False):
+def fetch_data(LOGIN, PASSWORD, THEORETICAL_OR_PRACTICE, word_info, CHROME_DRIVER_PATH, PRACTICAL_EXAM_ALERT_THRESHOLD, THEORETICAL_EXAM_ALERT_THRESHOLD, user_info = None, is_booking = False):
     chrome_driver_path = CHROME_DRIVER_PATH
     service = Service(chrome_driver_path)
     driver = webdriver.Chrome(service=service)
@@ -102,92 +106,139 @@ def fetch_data(LOGIN, PASSWORD, THEORETICAL_TERMS, word_info, CHROME_DRIVER_PATH
         wait = WebDriverWait(driver, 20)
 
 
-        # Retrieve practice exam date
-        term_practice_exam = get_exam_date(driver, wait, "PRACTICE")
-        print(f"Practice exam date: {term_practice_exam}")
+        while True:
+            time.sleep(1)
 
-        term_theoretical_exam = ()
-        if THEORETICAL_TERMS:
-            # Retrieve theoretical exam date
-            term_theoretical_exam = get_exam_date(driver, wait, "THEORY")
-            print(f"Theoretical exam date: {term_theoretical_exam}")
+            # For practice exam
+            if THEORETICAL_OR_PRACTICE == "p":
+                # Retrieve practice exam date
+                exam_term = get_exam_date(driver, wait, "PRACTICE")
+                print(f"Practice exam date: {exam_term}")
+
+                if is_less_than_x_days(exam_term[0][-5:], PRACTICAL_EXAM_ALERT_THRESHOLD):
+                    break
+                else:
+                    time.sleep(6)
+
+            # For theoretical exam
+            elif THEORETICAL_OR_PRACTICE == "t":
+                # Retrieve theoretical exam date
+                exam_term = get_exam_date(driver, wait, "THEORY")
+                print(f"Theoretical exam date: {exam_term}")
+
+                if is_less_than_x_days(exam_term[0][-5:], THEORETICAL_EXAM_ALERT_THRESHOLD):
+                    break
+                else:
+                    time.sleep(6)
+
+
+            button = driver.find_element(By.CSS_SELECTOR, "button.ghost-btn.back")
+            driver.execute_script("arguments[0].click();", button)
+
+            # Select "Egzamin na prawo jazdy (PKK)"
+            radio_button = wait.until(
+                EC.presence_of_element_located(
+                    (By.XPATH, '//span[text()="Egzamin na prawo jazdy (PKK)"]//preceding::input[@type="radio"]')
+                )
+            )
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", radio_button)
+            try:
+                radio_button.click()
+            except:
+                driver.execute_script("arguments[0].click();", radio_button)
+
+            # Select category (B)
+            category_input = wait.until(EC.visibility_of_element_located((By.ID, "category-select")))
+            driver.execute_script("arguments[0].click();", category_input)
+            result_list = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "ul.results")))
+            b_option = driver.find_element(By.ID, word_info["category"])
+            driver.execute_script("arguments[0].click();", b_option)
+
+            # Click "Next"
+            next_button = wait.until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, "ic-ghost-button .ghost-btn")))
+            driver.execute_script("arguments[0].click();", next_button)
+            wait = WebDriverWait(driver, 20)
 
 
         if not is_booking:
-            return [term_practice_exam, term_theoretical_exam, driver, wait]
+            return exam_term
 
-        else:
+
+        message = (f"!!REJESTRACJA NA EGZAMIN PRAKTYCZNY\n"
+                   f"DATA: {exam_term[0]}, {exam_term[1][0]}")
+        subprocess.run(["python", "message.py", message])
+
+        try:
+            mobile_select = wait.until(
+                EC.element_to_be_clickable((By.XPATH, '//div[@aria-label="Rozwijana lista"]'))
+            )
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", mobile_select)
+            time.sleep(1)
+
             try:
-                mobile_select = wait.until(
-                    EC.element_to_be_clickable((By.XPATH, '//div[@aria-label="Rozwijana lista"]'))
-                )
-                driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", mobile_select)
-                time.sleep(1)
-
-                try:
-                    mobile_select.click()
-                except Exception as e:
-                    driver.execute_script("arguments[0].click();", mobile_select)
-
+                mobile_select.click()
             except Exception as e:
-                print(f"Error: {e}")
+                driver.execute_script("arguments[0].click();", mobile_select)
 
-            confirm_button = driver.find_element(By.ID, "confirm-modal-btn")
-            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", confirm_button)
-            time.sleep(1)
-            driver.execute_script("arguments[0].click();", confirm_button)
+        except Exception as e:
+            print(f"Error: {e}")
 
-            firstname_input = driver.find_element(By.ID, "firstname")
-            firstname_input.send_keys(user_info["first_name"])
+        confirm_button = driver.find_element(By.ID, "confirm-modal-btn")
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", confirm_button)
+        time.sleep(1)
+        driver.execute_script("arguments[0].click();", confirm_button)
 
-            firstname_input = driver.find_element(By.ID, "lastname")
-            firstname_input.send_keys(user_info["last_name"])
+        firstname_input = driver.find_element(By.ID, "firstname")
+        firstname_input.send_keys(user_info["first_name"])
 
-            firstname_input = driver.find_element(By.ID, "pesel")
-            firstname_input.send_keys(user_info["pesel"])
+        firstname_input = driver.find_element(By.ID, "lastname")
+        firstname_input.send_keys(user_info["last_name"])
 
-            firstname_input = driver.find_element(By.ID, "pkk")
-            firstname_input.send_keys(user_info["pkk"])
+        firstname_input = driver.find_element(By.ID, "pesel")
+        firstname_input.send_keys(user_info["pesel"])
 
-            category_input = driver.find_element(By.ID, "category-select")
-            category_input.send_keys(user_info["category"])
-            category_input.send_keys(Keys.RETURN)
+        firstname_input = driver.find_element(By.ID, "pkk")
+        firstname_input.send_keys(user_info["pkk"])
 
-            firstname_input = driver.find_element(By.ID, "email")
-            firstname_input.send_keys(user_info["email"])
+        category_input = driver.find_element(By.ID, "category-select")
+        category_input.send_keys(user_info["category"])
+        category_input.send_keys(Keys.RETURN)
 
-            firstname_input = driver.find_element(By.ID, "phoneNumber")
-            firstname_input.send_keys(user_info["phone_number"])
+        firstname_input = driver.find_element(By.ID, "email")
+        firstname_input.send_keys(user_info["email"])
 
-            checkbox = driver.find_element(By.ID, "regulations-text")
-            driver.execute_script("arguments[0].click();", checkbox)
+        firstname_input = driver.find_element(By.ID, "phoneNumber")
+        firstname_input.send_keys(user_info["phone_number"])
 
-            next_button = driver.find_element(By.XPATH, "//span[text()='Dalej']")
-            driver.execute_script("arguments[0].scrollIntoView(true);", next_button)
-            time.sleep(1)
-            next_button.click()
+        checkbox = driver.find_element(By.ID, "regulations-text")
+        driver.execute_script("arguments[0].click();", checkbox)
 
-            next_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "next-btn")))
-            next_button.click()
+        next_button = driver.find_element(By.XPATH, "//span[text()='Dalej']")
+        driver.execute_script("arguments[0].scrollIntoView(true);", next_button)
+        time.sleep(1)
+        next_button.click()
 
-            time.sleep(5)
+        next_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "next-btn")))
+        next_button.click()
 
-            button = driver.find_element(By.ID, "next-btn")
-            driver.execute_script("arguments[0].scrollIntoView();", button)
-            time.sleep(1)
-            next_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "next-btn")))
-            next_button.click()
+        time.sleep(5)
 
-            time.sleep(5)
+        button = driver.find_element(By.ID, "next-btn")
+        driver.execute_script("arguments[0].scrollIntoView();", button)
+        time.sleep(1)
+        next_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "next-btn")))
+        next_button.click()
 
-            # confirm_button = WebDriverWait(driver, 10).until(
-            #     EC.element_to_be_clickable((By.XPATH, '//button[contains(@class, "ghost-btn") and text()="Potwierdzam"]'))
-            # )
-            # driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", confirm_button)
-            # time.sleep(1)
-            # confirm_button.click()
+        time.sleep(5)
 
-            input("Press any key...")
+        button = driver.find_element(By.XPATH, "//button[normalize-space()='Potwierdzam']")
+        driver.execute_script("arguments[0].click();", button)
+
+        time.sleep(5)
+
+        input("Press any key...")
+        return None
 
 
     except Exception as e:

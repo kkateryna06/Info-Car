@@ -1,4 +1,3 @@
-
 # Info-Car
 
 ## How to Run the Project
@@ -19,7 +18,7 @@
 **PASSWORD = 'your_password'**             - The password for your account on https://info-car.pl  
 
 #### Bot settings
-**THEORETICAL_TERMS = 'True'**             - If set to 'True', the bot will check and send available dates for the theoretical exam
+**THEORETICAL_OR_PRACTICE = 'p'**          - If set to 'p' for practice exam and 't' for theoretical exam
 
 **AUTO_BOOKING = 'True'**                  - If set to 'True', the bot will automatically book the exam when a suitable slot is found
 
@@ -30,7 +29,7 @@
 #### Personal details for exam registration
 **FIRST_NAME = 'Name'**                    - Your first name
 
-**LAST_NAME = 'Last Name'**                    - Your last name
+**LAST_NAME = 'Last name'**                    - Your last name
 
 **PESEL = '12345'**                        - Your PESEL number
 
@@ -48,17 +47,20 @@
 
 ### 2. Install dependencies: Make sure you have all the necessary libraries installed. You can do this by running:  
 
-    pip install -r requirements.txt
+**pip install -r requirements.txt**
 
 ### 3. Run the project: To run the project, simply use the command:
 
-    python main.py
+**python main.py**
 
 ## Code Description
-The script runs at a frequency depending on the time of day to fetch the nearest exam dates from info-car.pl.
-The user can configure the number of days in advance to receive notifications.
-Additionally, if auto-booking is enabled, the script will attempt to register the user for the earliest available _practice_ exam date that meets the set conditions.
-The process will stop at the payment step, keeping the browser window open and waiting for the user to complete the transaction manually.
+The script runs every 6 seconds, adjusting its frequency depending on the time of day, to fetch the nearest exam dates from info-car.pl.
+The user can configure how many days in advance they want to be notified of available exam dates.
+If a suitable exam date is found and auto-booking is enabled in the config, the script will automatically begin the registration process.
+If the registration is successful, the browser will remain open on the payment page — you will have around 5 minutes to complete the transaction manually.
+If payment is not completed in time, the reservation will be cancelled.
+
+Please note that occasional errors may occur during the script’s execution (due to website performance or internet issues), but the script is designed to handle them and will recover automatically.
 
 Before running the script, you need to download the ChromeDriver compatible with your version of Google Chrome. https://developer.chrome.com/docs/chromedriver/downloads/version-selection
 

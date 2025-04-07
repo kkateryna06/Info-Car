@@ -14,57 +14,37 @@ async def send_telegram_message(message, bot, CHAT_ID):
 
 
 # Fetches the exam date and sends a message if conditions are met
-async def get_exam_date(bot, CHAT_ID, LOGIN, PASSWORD, THEORETICAL_TERMS, THEORETICAL_EXAM_ALERT_THRESHOLD, PRACTICAL_EXAM_ALERT_THRESHOLD, word_info, AUTO_BOOKING, user_info, CHROME_DRIVER_PATH):
-    term_text = fetch_data(LOGIN=LOGIN, PASSWORD=PASSWORD, THEORETICAL_TERMS=THEORETICAL_TERMS, word_info=word_info,
+async def get_exam_date(bot, CHAT_ID, LOGIN, PASSWORD, THEORETICAL_OR_PRACTICE, THEORETICAL_EXAM_ALERT_THRESHOLD, PRACTICAL_EXAM_ALERT_THRESHOLD, word_info, AUTO_BOOKING, user_info, CHROME_DRIVER_PATH):
+    term_text = fetch_data(LOGIN=LOGIN, PASSWORD=PASSWORD, THEORETICAL_OR_PRACTICE=THEORETICAL_OR_PRACTICE, is_booking=AUTO_BOOKING,
+                           PRACTICAL_EXAM_ALERT_THRESHOLD=PRACTICAL_EXAM_ALERT_THRESHOLD, THEORETICAL_EXAM_ALERT_THRESHOLD=THEORETICAL_EXAM_ALERT_THRESHOLD, word_info=word_info,
+                           user_info=user_info,
                            CHROME_DRIVER_PATH=CHROME_DRIVER_PATH)
 
-    # Practical exam
-    if is_less_than_x_days(term_text[0][0][-5:], PRACTICAL_EXAM_ALERT_THRESHOLD):
-        await send_telegram_message(
-            f"DATA EGZAMINU PRAKTYCZNEGO: {term_text[0][0]}\nGODZINY: {', '.join(term_text[0][1])}",
-            bot, CHAT_ID)
-        print("Message sent")
+    if term_text is not None:
+        # Practical exam
+        if THEORETICAL_OR_PRACTICE == "p":
+            if is_less_than_x_days(term_text[0][-5:], PRACTICAL_EXAM_ALERT_THRESHOLD):
+                await send_telegram_message(
+                    f"DATA EGZAMINU PRAKTYCZNEGO: {term_text[0]}\nGODZINY: {', '.join(term_text[1])}",
+                    bot, CHAT_ID)
+                print("Message sent")
 
-        if AUTO_BOOKING:
-            fetch_data(
-                LOGIN=LOGIN, PASSWORD=PASSWORD, user_info=user_info, word_info=word_info, THEORETICAL_TERMS=False, is_booking=True,
-                CHROME_DRIVER_PATH=CHROME_DRIVER_PATH)
-    else:
-        print("Message not sent, the exam date is too far away")
-
-    if THEORETICAL_TERMS:
         # Theoretical exam
-        if is_less_than_x_days(term_text[1][0][-5:], THEORETICAL_EXAM_ALERT_THRESHOLD):
-            await send_telegram_message(f"DATA EGZAMINU TEORYTYCZNEGO: {term_text[1][0]}\nGODZINY: {', '.join(term_text[1][1])}",
-                bot, CHAT_ID)
-            print("Message sent")
-        else:
-            print("Message not sent, the exam date is too far away")
-
-
-# Determine sleep interval based on the time of day
-def get_sleep_interval():
-    now = datetime.datetime.now().time()
-
-    if datetime.time(7, 0) <= now < datetime.time(9, 0):  # 07:00 - 9:00 → every 3 minutes
-        return 180
-    elif datetime.time(9, 0) <= now < datetime.time(12, 0): # 9:00 - 12:00 → every 10 minutes
-        return 600
-    elif datetime.time(12, 0) <= now < datetime.time(17, 0):  # 12:00 - 17:00 → every 15 minutes
-        return 900
-    else:  # 17:00 - 07:00 → every 30 minutes
-        return 1800
+        elif THEORETICAL_OR_PRACTICE == "t":
+            if is_less_than_x_days(term_text[0][-5:], THEORETICAL_EXAM_ALERT_THRESHOLD):
+                await send_telegram_message(f"DATA EGZAMINU TEORYTYCZNEGO: {term_text[0]}\nGODZINY: {', '.join(term_text[1])}",
+                    bot, CHAT_ID)
+                print("Message sent")
+            else:
+                print("Message not sent, the exam date is too far away")
 
 
 # Periodic task execution
-async def periodic_task(bot, CHAT_ID, LOGIN, PASSWORD, THEORETICAL_TERMS, THEORETICAL_EXAM_ALERT_THRESHOLD, PRACTICAL_EXAM_ALERT_THRESHOLD, word_info, AUTO_BOOKING, user_info, CHROME_DRIVER_PATH):
+async def periodic_task(bot, CHAT_ID, LOGIN, PASSWORD, THEORETICAL_OR_PRACTICE, THEORETICAL_EXAM_ALERT_THRESHOLD, PRACTICAL_EXAM_ALERT_THRESHOLD, word_info, AUTO_BOOKING, user_info, CHROME_DRIVER_PATH):
     while True:
-        await get_exam_date(bot=bot, CHAT_ID=CHAT_ID, LOGIN=LOGIN, PASSWORD=PASSWORD, THEORETICAL_TERMS=THEORETICAL_TERMS,
+        await get_exam_date(bot=bot, CHAT_ID=CHAT_ID, LOGIN=LOGIN, PASSWORD=PASSWORD, THEORETICAL_OR_PRACTICE=THEORETICAL_OR_PRACTICE,
                            THEORETICAL_EXAM_ALERT_THRESHOLD=THEORETICAL_EXAM_ALERT_THRESHOLD, PRACTICAL_EXAM_ALERT_THRESHOLD=PRACTICAL_EXAM_ALERT_THRESHOLD,
                            word_info=word_info, AUTO_BOOKING=AUTO_BOOKING, user_info=user_info, CHROME_DRIVER_PATH=CHROME_DRIVER_PATH)
-        sleep_time = get_sleep_interval()
-        print(f"Sleeping for {sleep_time // 60} minutes...")
-        await asyncio.sleep(sleep_time)
 
 
 # Bot start command
@@ -94,7 +74,7 @@ def main():
     LOGIN = config.get("LOGIN")
     PASSWORD = config.get("PASSWORD")
 
-    THEORETICAL_TERMS = True if config.get("THEORETICAL_TERMS") == 'True' else False
+    THEORETICAL_OR_PRACTICE = config.get("THEORETICAL_OR_PRACTICE").lower()
     AUTO_BOOKING = True if config.get("AUTO_BOOKING") == 'True' else False
     THEORETICAL_EXAM_ALERT_THRESHOLD = int(config.get("THEORETICAL_EXAM_ALERT_THRESHOLD"))
     PRACTICAL_EXAM_ALERT_THRESHOLD = int(config.get("PRACTICAL_EXAM_ALERT_THRESHOLD"))
@@ -133,7 +113,7 @@ def main():
     bot = application.bot
     loop = asyncio.get_event_loop()
 
-    loop.create_task(periodic_task(bot=bot, CHAT_ID=CHAT_ID, LOGIN=LOGIN, PASSWORD=PASSWORD, THEORETICAL_TERMS=THEORETICAL_TERMS,
+    loop.create_task(periodic_task(bot=bot, CHAT_ID=CHAT_ID, LOGIN=LOGIN, PASSWORD=PASSWORD, THEORETICAL_OR_PRACTICE=THEORETICAL_OR_PRACTICE,
                                    THEORETICAL_EXAM_ALERT_THRESHOLD=THEORETICAL_EXAM_ALERT_THRESHOLD, PRACTICAL_EXAM_ALERT_THRESHOLD=PRACTICAL_EXAM_ALERT_THRESHOLD,
                                    word_info=word_info, AUTO_BOOKING=AUTO_BOOKING, user_info=user_info, CHROME_DRIVER_PATH=CHROME_DRIVER_PATH))
     loop.run_until_complete(application.run_polling())
