@@ -1,14 +1,14 @@
-import asyncio
+import subprocess
 import subprocess
 import time
 
-import requests
 from selenium import webdriver
-from selenium.webdriver import ActionChains, Keys
+from selenium.webdriver import Keys
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.chrome import ChromeDriverManager
 
 from date import is_less_than_x_days
 
@@ -41,8 +41,8 @@ def get_exam_date(driver, wait, radio_label):
 
 def fetch_data(LOGIN, PASSWORD, THEORETICAL_OR_PRACTICE, word_info, CHROME_DRIVER_PATH, PRACTICAL_EXAM_ALERT_THRESHOLD, THEORETICAL_EXAM_ALERT_THRESHOLD, user_info = None, is_booking = False):
     chrome_driver_path = CHROME_DRIVER_PATH
-    service = Service(chrome_driver_path)
-    driver = webdriver.Chrome(service=service)
+    # service = Service(chrome_driver_path)
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
     driver.set_window_size(400, 800)
 
     try:
@@ -106,7 +106,9 @@ def fetch_data(LOGIN, PASSWORD, THEORETICAL_OR_PRACTICE, word_info, CHROME_DRIVE
         wait = WebDriverWait(driver, 20)
 
 
+        a = 0
         while True:
+            a += 1
             time.sleep(1)
 
             # For practice exam
@@ -222,7 +224,7 @@ def fetch_data(LOGIN, PASSWORD, THEORETICAL_OR_PRACTICE, word_info, CHROME_DRIVE
         next_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "next-btn")))
         next_button.click()
 
-        time.sleep(5)
+        time.sleep(2)
 
         button = driver.find_element(By.ID, "next-btn")
         driver.execute_script("arguments[0].scrollIntoView();", button)
@@ -230,12 +232,12 @@ def fetch_data(LOGIN, PASSWORD, THEORETICAL_OR_PRACTICE, word_info, CHROME_DRIVE
         next_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "next-btn")))
         next_button.click()
 
-        time.sleep(5)
+        time.sleep(2)
 
         button = driver.find_element(By.XPATH, "//button[normalize-space()='Potwierdzam']")
         driver.execute_script("arguments[0].click();", button)
 
-        time.sleep(5)
+        time.sleep(2)
 
         input("Press any key...")
         return None

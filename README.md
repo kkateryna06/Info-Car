@@ -5,8 +5,6 @@
 ### 1. Fill in the configuration file: Open the _config.txt_ file and fill in the following lines:  
 > All values in the config.txt file must be enclosed in single quotes ('') and written with the correct letter case
 
-**CHROME_DRIVER_PATH = 'your_chromedriver_path'** - The path to the chromedriver.exe file on your computer
-
 #### Telegram-related variables
 **TELEGRAM_TOKEN = 'your_telegram_token'** - The Telegram bot token you get from BotFather  
 
@@ -62,9 +60,10 @@ If payment is not completed in time, the reservation will be cancelled.
 
 Please note that occasional errors may occur during the script’s execution (due to website performance or internet issues), but the script is designed to handle them and will recover automatically.
 
-Before running the script, you need to download the ChromeDriver compatible with your version of Google Chrome. https://developer.chrome.com/docs/chromedriver/downloads/version-selection
-
 ## Warning
 
 1. Ensure that all user data is entered correctly; otherwise, the script will not be able to book an exam.
 2. Check the exact spelling of your province (województwo) and WORD (ośrodek egzaminacyjny) on the info-car.pl and enter them in the corresponding fields, preserving the letter case.
+
+##
+POWODZENIA <3!!

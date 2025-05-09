@@ -1,11 +1,9 @@
-from telegram.ext import Application, CommandHandler
 import asyncio
-import datetime
 
-from unicodedata import category
+from telegram.ext import Application, CommandHandler
 
-from fetch_exam_date import fetch_data
 from date import is_less_than_x_days
+from fetch_exam_date import fetch_data
 
 
 # Sends a message to Telegram
